@@ -21,8 +21,9 @@ func main() {
 func home(w http.ResponseWriter, r *http.Request) {
 	coupon := r.PostFormValue("coupon")
 	ccNumber := r.PostFormValue("ccNumber")
+	email := r.PostFormValue("email")
 
-	resultCoupon := makeHttpCall("http://localhost:9092", coupon)
+	resultCoupon := makeHttpCall("http://localhost:9092", coupon, email)
 
 	result := Result{Status: "declined"}
 
@@ -34,6 +35,13 @@ func home(w http.ResponseWriter, r *http.Request) {
 		result.Status = "invalid coupon"
 	}
 
+	if resultCoupon.Status == "invalidMail" {
+		result.Status = "invalid email"
+	}
+	if resultCoupon.Status == "offline" {
+		result.Status = "Servidor fora do ar!"
+	}
+
 	jsonData, err := json.Marshal(result)
 	if err != nil {
 		log.Fatal("Error processing json")
@@ -42,11 +50,11 @@ func home(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprintf(w, string(jsonData))
 }
 
-
-func makeHttpCall(urlMicroservice string, coupon string) Result {
+func makeHttpCall(urlMicroservice string, coupon string, email string) Result {
 
 	values := url.Values{}
 	values.Add("coupon", coupon)
+	values.Add("email", email)
 
 	res, err := http.PostForm(urlMicroservice, values)
 	if err != nil {
